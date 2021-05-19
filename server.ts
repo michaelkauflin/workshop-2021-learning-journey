@@ -372,10 +372,21 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   // vuln-code-snippet end changeProductChallenge
 
   /* Verify the 2FA Token */
-  app.post('/rest/2fa/verify',
-    new RateLimit({ windowMs: 5 * 60 * 1000, max: 100 }),
-    twoFactorAuth.verify()
-  )
+  app.get('/api/search', function (req, res, context) {
+    var search_name = req.query.search;
+
+    if (search_name !== null) {
+      models.sequelize.query(`SELECT * FROM Products WHERE name LIKE '%${search_name}%' ORDER BY name`)
+      .then(([ products ]) => {
+        res.json(utils.queryResultToJson(products))
+      })
+      .catch(error => {
+        next(error);
+      });
+    }
+
+    res.json({"message": "Failed to find product by name: " + search_name})
+  });
   /* Check 2FA Status for the current User */
   app.get('/rest/2fa/status', security.isAuthorized(), twoFactorAuth.status())
   /* Enable 2FA for the current User */
